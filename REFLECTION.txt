@@ -1,0 +1,23 @@
+Reflection:
+
+Development process:
+- Started from a fresh Vite/React app, installed axios, react-router-dom, Recharts.
+- Built API client with season/league fallbacks to respect free-tier limits; added caching to reduce duplicate calls.
+- Structured the app with reusable components (layout, cards, chart, search), contexts for theme and favorites, and routed pages for search, teams, profiles, comparison, and favorites.
+- Styled a cohesive ESPN-inspired UI with responsive layout and dark/light modes.
+
+Challenges:
+- Free-tier API season restrictions required fallback logic to 2021–2023 and limited league coverage.
+- Managing rate limits pushed me to cache GET responses and keep league scope narrow.
+- Ensuring profile/chart data stayed meaningful even when some API fields were missing demanded safe defaults and placeholder images.
+
+Lessons learned:
+- Designing for API constraints early (fallbacks, caching, reduced scope) prevents user-facing errors later.
+- Centralizing transformations (e.g., formatPlayerCard) keeps components simpler and consistent.
+- Clear, reusable primitives (SearchBar, Card patterns) speed up iteration and polish.
+
+Future improvements:
+- Add automated tests (component + integration) and mock API fixtures to guard against regressions.
+- Support more leagues and dynamic season selection when a higher API tier is available.
+- Add richer comparison (per-season breakdowns, charts) and filtering/sorting for search results.
+- Introduce skeleton loaders and optimistic UI for favorites for even smoother UX.
