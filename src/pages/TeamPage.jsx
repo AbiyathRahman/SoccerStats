@@ -9,6 +9,7 @@ const TeamPage = () => {
   const [players, setPlayers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const season = 2023
 
   useEffect(() => {
     const load = async () => {
@@ -17,7 +18,7 @@ const TeamPage = () => {
       try {
         const [teamData, rosterData] = await Promise.all([
           fetchTeamById(id),
-          fetchTeamPlayers(id),
+          fetchTeamPlayers(id, season),
         ])
         if (!teamData) {
           setError('Team not found.')
@@ -25,9 +26,12 @@ const TeamPage = () => {
         }
         setTeam({ ...teamData.team, venue: teamData.venue })
         setPlayers(rosterData.map(formatPlayerCard))
+        if (!rosterData.length) {
+          setError(`No roster data for season ${season}.`)
+        }
       } catch (err) {
         console.error(err)
-        setError('Unable to load this team right now.')
+        setError(`Unable to load this team for season ${season}.`)
       } finally {
         setLoading(false)
       }
@@ -50,12 +54,13 @@ const TeamPage = () => {
             </p>
             <p className="muted small">{team.venue?.name}</p>
           </div>
+          <div className="muted small">Season {season}</div>
         </div>
       </div>
 
       <div className="section-heading">
         <h3>Roster</h3>
-        <p className="muted">Season 2024</p>
+        <p className="muted">Season {season}</p>
       </div>
       <div className="grid">
         {players.map((player) => (

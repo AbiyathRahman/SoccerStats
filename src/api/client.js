@@ -4,9 +4,10 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://v3.football.api-sp
 const API_KEY = import.meta.env.VITE_API_KEY
 
 const requestCache = new Map()
-// Free API tier supports seasons up to 2023; fall back through recent years to avoid errors.
-const SEASONS = [2023, 2022, 2021]
+// Prefer latest season first, then fall back to earlier free-tier seasons to avoid errors.
+const SEASONS = [2024, 2023, 2022, 2021]
 const LEAGUES = [39, 140, 78] // Premier League, La Liga, Bundesliga
+export const SEASON_OPTIONS = Array.from({ length: 2024 - 2014 + 1 }, (_, idx) => 2024 - idx)
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -76,14 +77,19 @@ export const searchTeams = async (query) => {
   const aggregated = []
 
   for (const league of LEAGUES) {
-    const data = await get('/teams', { search: query, league })
-    data.forEach((item) => {
-      const id = item.team?.id
-      if (id && !seen.has(id)) {
-        seen.add(id)
-        aggregated.push(item)
-      }
-    })
+    // API does not allow search + league together; fetch league teams and filter locally.
+    const data = await getWithSeasonFallback('/teams', { league })
+    data
+      .filter((item) =>
+        item.team?.name?.toLowerCase().includes(query.trim().toLowerCase()),
+      )
+      .forEach((item) => {
+        const id = item.team?.id
+        if (id && !seen.has(id)) {
+          seen.add(id)
+          aggregated.push(item)
+        }
+      })
   }
 
   return aggregated
@@ -99,8 +105,44 @@ export const fetchTeamById = async (id) => {
   return data?.[0] || null
 }
 
-export const fetchTeamPlayers = async (teamId) => {
-  return getWithSeasonFallback('/players', { team: teamId })
+export const fetchTeamPlayers = async (teamId, season) => {
+  const fetchPaged = async (s) => {
+    const all = []
+    let page = 1
+    let done = false
+
+    while (!done) {
+      const response = await api.get('/players', {
+        params: { team: teamId, season: s, page },
+      })
+      const data = response.data?.response ?? []
+      const paging = response.data?.paging
+      all.push(...data)
+      if (!paging || paging.current >= paging.total) {
+        done = true
+      } else {
+        page += 1
+      }
+    }
+    return all
+  }
+
+  // If a season is explicitly requested (from the dropdown), honor it directly.
+  if (season) {
+    return fetchPaged(season)
+  }
+
+  // Otherwise, try the latest first then fallback.
+  for (const s of [2023, 2024]) {
+    try {
+      const data = await fetchPaged(s)
+      if (data.length) return data
+    } catch (err) {
+      continue // eslint-disable-line no-continue
+    }
+  }
+
+  return fetchPaged(2023)
 }
 
 export const fetchPlayerStatistics = async (id) => {

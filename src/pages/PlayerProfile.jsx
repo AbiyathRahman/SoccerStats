@@ -21,9 +21,22 @@ const PlayerProfile = () => {
           setError('Player not found.')
           return
         }
+        const leagues = data.statistics || []
+        const totals = leagues.reduce(
+          (acc, entry) => ({
+            goals: acc.goals + (entry.goals?.total ?? 0),
+            assists: acc.assists + (entry.goals?.assists ?? 0),
+            appearances: acc.appearances + (entry.games?.appearances ?? 0),
+          }),
+          { goals: 0, assists: 0, appearances: 0 },
+        )
+
         setPlayer({
           ...formatPlayerCard(data),
-          leagues: data.statistics || [],
+          leagues,
+          goals: totals.goals,
+          assists: totals.assists,
+          appearances: totals.appearances,
         })
       } catch (err) {
         console.error(err)
